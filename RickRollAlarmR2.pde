@@ -27,10 +27,13 @@ void setup()
 
   setTime(time[0], time[1], 0, time[3], time[2], time[4]); // set time to Serialtime. 
 
-  Serial.println("April Fools device now has the current time. Specify target time.");
+  Serial.println("April Fools device now has the current time:");
+  Serial.println(time[0] +':'+ time[1] + ' ' + time[2] +'/'+ time[3] +'/'+ time[4]);
+  clearTime();
+  Serial.println("Set the target time!(same format)");
   
-  //Clean everything and then get the target time.
   getSerialTimeData();
+  //set the timer!
 
   Serial.println("April Fools device is now armed. Commencing countdown.");
 
@@ -126,7 +129,7 @@ void getSerialTimeData() { //Gets a serial time from serial. used for settings o
      timeIndex = 0;
      clearBuffer();
      index = 0;
-     Serial.println("Time recieved and set!")
+     Serial.println("Time recieved and set!");
      
     } else {
      //clear it all and start over 
