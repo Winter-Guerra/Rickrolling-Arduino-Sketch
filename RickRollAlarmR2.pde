@@ -13,6 +13,8 @@ char buffer[100]; //serial buffer.
 int time[5]; //TIme buffer, stores time except for seconds  
 int triggerTime[5]; //TIme buffer, stores time except for seconds  
 
+int *arrayPointer[] = 
+
 boolean isTimeSet = false;
 boolean debugMode = true;
 
@@ -48,22 +50,22 @@ void setup()
   Serial.println(triggerTime[0] +':'+ triggerTime[1] + ' ' + triggerTime[2] +'/'+ triggerTime[3] +'/'+ triggerTime[4]);
 
   Serial.println("April Fools device is now armed. Commencing countdown.");
-  
+
   if (debugMode) Serial.println("Debug mode is on. Expect a clock output every few seconds with the current time.");
 
 }
 
 
 void loop() {  
-  
+
   if (debugMode) { //if we are in the debugging mode
     digitalClockDisplay();  //display the time once every few seconds.
   }
-  
+
   //Check for trigger conditions.
   if (alarmsTriggered()) {
-   //Automated Rickrolling madness!
-   rickRollCrashAndBurn(); //should this continue for a few minutes? Probably! ;) 
+    //Automated Rickrolling madness!
+    rickRollCrashAndBurn(); //should this continue for a few minutes? Probably! ;) 
   }
 
   Alarm.delay(30000); // wait 30 seconds between everything. This might use up too much battery. Maybe just a big 'ol delay?
@@ -104,30 +106,33 @@ boolean triggerDateReached() {
   if (triggerTime[2] == month() && triggerTime[3] == day() && triggerTime[4] == year()) {
     //We are on the right date!
     return true;
-  } else return false;
+  } 
+  else return false;
 }
 
 boolean triggerTimeReached() {
   //check time
   if (triggerTime[0] == hour() && triggerTime[1] == minute()) {
-   //Yay! we are on the right time!
-  return true; 
-  } else return false;
+    //Yay! we are on the right time!
+    return true; 
+  } 
+  else return false;
 }
 
 boolean alarmsTriggered() {
   //returns a boolean whether the alarms have been triggered or not. It should also probably pass a enum too.
   if (triggerDateReached() && triggerTimeReached()) {
     return true;
-  } else return false;
-  
-  
+  } 
+  else return false;
+
+
 }
 
 void rickRollCrashAndBurn() {
   //RickRoll!
   //Read the time to keep pestering from the RICKROLL_MINUTES var.
-  
+
 }
 
 void clearTime() { //Clears the timesetup varible. (For unsucessful syncs)
@@ -192,5 +197,6 @@ void getSerialTimeData() { //Gets a serial time from serial. used for settings o
   }
 
 }
+
 
 
