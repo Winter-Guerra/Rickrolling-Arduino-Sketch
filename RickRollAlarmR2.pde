@@ -11,14 +11,20 @@
 char buffer[100]; //serial buffer.
 
 int time[5]; //TIme buffer, stores time except for seconds  
-int triggerTime[5]; //TIme buffer, stores time except for seconds  
+int triggerTime[5]; //TIme buffer, stores time except for seconds
 
-int *arrayPointer[] = 
+time_t triggerTimeSecs; //Trigger Time in seconds. 
+time_t setTimeTemp; //Current time to set 
+
+int *arrayPointer[] = {triggerTime};
 
 boolean isTimeSet = false;
 boolean debugMode = true;
+boolean alarmInProgress = false;
 
-#define RICKROLL_MINUTES 10 //Number of minutes to rickroll for.
+#define RICKROLL_MINUTES      10 //Number of minutes to rickroll for.
+#define RICKROLL_REPEAT_DELAY 2  //Minutes to wait before Rickrolling again.
+#define CHIPCORDER_PIN        10 //The pin that the chipcorder is connected to.
 
 ///Array setup:
 ///0 = hour; 1 = minute; 2 = month; 3 = date; 4 = year.
@@ -27,6 +33,9 @@ boolean debugMode = true;
 void setup()
 {
   Serial.begin(9600);    
+  
+  //Read previously saved time from EEPROM
+  
   Serial.println("Device on standby, pending setup.");
   Serial.println("Set time to arm April Fools device. (Hour:Minute:Month(int):Date:Year)");
 
@@ -36,18 +45,22 @@ void setup()
 
   Serial.println("April Fools device now has the current time:");
   Serial.println(time[0] +':'+ time[1] + ' ' + time[2] +'/'+ time[3] +'/'+ time[4]);
+  
+  setTimeTemp = now(); //get the current time in seconds.
 
   clearTime(); //Get ready for the next command!
   Serial.println("Set the target time!(same format)");
 
-  getSerialTimeData(); //Get input. Perhaps a pointer would be better so I can store it directly to triggertime?
-  //set the timer!
-  for (int i = 0; i < 5; i++) {
-    triggerTime[i] = time[i]; //get new trigger time
-  }
+  getSerialTimeData(); //Get input for trigger time.
+  
+  setTime(time[0], time[1], 0, time[3], time[2], time[4]); // set time to Serialtime. 
+
+  triggerTimeSecs = now(); //get the trigger time
 
   Serial.println("April Fools device now has the target time:");
-  Serial.println(triggerTime[0] +':'+ triggerTime[1] + ' ' + triggerTime[2] +'/'+ triggerTime[3] +'/'+ triggerTime[4]);
+  Serial.println(time[0] +':'+ time[1] + ' ' + time[2] +'/'+ time[3] +'/'+ time[4]);
+  
+  setTime(setTimeTemp);
 
   Serial.println("April Fools device is now armed. Commencing countdown.");
 
@@ -101,18 +114,10 @@ void clearBuffer() { //clears the serial buffer varible
   }
 }
 
-boolean triggerDateReached() {
-  //Check date
-  if (triggerTime[2] == month() && triggerTime[3] == day() && triggerTime[4] == year()) {
-    //We are on the right date!
-    return true;
-  } 
-  else return false;
-}
-
 boolean triggerTimeReached() {
   //check time
-  if (triggerTime[0] == hour() && triggerTime[1] == minute()) {
+ //I need to make a time secs subroutine to handle the packing!!!!!!!
+  if (timeFromMidnight >= triggerTimeFromMidnight && timeFromMidnight <= (triggerTimeFromMidnight + RICKROLL_MINUTES)) {
     //Yay! we are on the right time!
     return true; 
   } 
@@ -121,7 +126,7 @@ boolean triggerTimeReached() {
 
 boolean alarmsTriggered() {
   //returns a boolean whether the alarms have been triggered or not. It should also probably pass a enum too.
-  if (triggerDateReached() && triggerTimeReached()) {
+  if (triggerTimeReached()) {
     return true;
   } 
   else return false;
@@ -142,10 +147,7 @@ void clearTime() { //Clears the timesetup varible. (For unsucessful syncs)
 }
 
 void getSerialTimeData() { //Gets a serial time from serial. used for settings of alarm and syncing.
-  //wait now for input.
-  while(!Serial.available()) {
-    delay(200);
-  }
+  //Don't wait for input. Just check and move onto the main prog loop.
 
   char tempChar;
   //While we still have input. Chop up the input
