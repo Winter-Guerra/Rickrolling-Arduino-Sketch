@@ -22,6 +22,8 @@ boolean isTimeSet = false;
 boolean debugMode = true;
 boolean alarmInProgress = false;
 
+long delayMillis = 0;
+
 #define RICKROLL_MINUTES      10 //Number of minutes to rickroll for.
 #define RICKROLL_REPEAT_DELAY 2  //Minutes to wait before Rickrolling again.
 #define CHIPCORDER_PIN        10 //The pin that the chipcorder is connected to.
@@ -36,7 +38,14 @@ void setup()
   
   //Read previously saved time from EEPROM
   
+  //Write the current time to the serial terminal.
+  
+  //Set Pinmodes:
+  pinMode(CHIPCORDER_PIN, OUTPUT);
+  digitalWrite(CHIPCORDER_PIN, LOW);
+  
   Serial.println("Device on standby, pending setup.");
+  
   Serial.println("Set time to arm April Fools device. (Hour:Minute:Month(int):Date:Year)");
 
   getSerialTimeData();
@@ -60,7 +69,7 @@ void setup()
   Serial.println("April Fools device now has the target time:");
   Serial.println(time[0] +':'+ time[1] + ' ' + time[2] +'/'+ time[3] +'/'+ time[4]);
   
-  setTime(setTimeTemp);
+  setTime(setTimeTemp); //set time back again.
 
   Serial.println("April Fools device is now armed. Commencing countdown.");
 
@@ -81,7 +90,7 @@ void loop() {
     rickRollCrashAndBurn(); //should this continue for a few minutes? Probably! ;) 
   }
 
-  Alarm.delay(30000); // wait 30 seconds between everything. This might use up too much battery. Maybe just a big 'ol delay?
+  Alarm.delay(30000); // wait 30 seconds between everything. This might use up too much battery. Maybe just a big 'ol delay? Or amybe just a full on sleep 30?
 }
 
 
@@ -117,7 +126,7 @@ void clearBuffer() { //clears the serial buffer varible
 boolean triggerTimeReached() {
   //check time
  //I need to make a time secs subroutine to handle the packing!!!!!!!
-  if (timeFromMidnight >= triggerTimeFromMidnight && timeFromMidnight <= (triggerTimeFromMidnight + RICKROLL_MINUTES)) {
+  if (setTimeTemp >= triggerTimeSecs && setTimeTemp <= triggerTimeSecs + (RICKROLL_MINUTES*60))) {
     //Yay! we are on the right time!
     return true; 
   } 
@@ -136,7 +145,16 @@ boolean alarmsTriggered() {
 
 void rickRollCrashAndBurn() {
   //RickRoll!
-  //Read the time to keep pestering from the RICKROLL_MINUTES var.
+ //wait the two minutes between rickrolls
+ if (millis() > delayMillis + (RICKROLL_REPEAT_DELAY*60)) {
+   //reset the millis timer
+   delayMillis = millis();
+   
+   //pulse the output pin.
+   digitalWrite(CHIPCORDER_PIN, HIGH);
+   delay(1000);
+   digitalWrite(CHIPCORDER_PIN, LOW);
+ }
 
 }
 
