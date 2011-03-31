@@ -7,6 +7,7 @@
 
 #include <Time.h>
 #include <TimeAlarms.h>
+#include <avr/eeprom.h>
 
 
 String password, passwordTry;
@@ -24,7 +25,7 @@ boolean alarmInProgress = false;
 unsigned long delayMillis = 0;
 
 #define RICKROLL_MINUTES      10 //Number of minutes to rickroll for.
-#define RICKROLL_REPEAT_DELAY 30  //Seconds to wait before Rickrolling again.
+#define RICKROLL_REPEAT_DELAY 24  //Seconds to wait before Rickrolling again.
 #define CHIPCORDER_PIN        2 //The pin that the chipcorder is connected to.
 
 ///Array setup:
@@ -36,7 +37,7 @@ void setup()
   Serial.begin(9600);    
 
   Serial.println("Read current time from EEPROM....");
-  /*
+  
   //Read previously saved time from EEPROM
    int16_t offset; //this is where in eeprom we should start saving/reading.
    offset = 0x00;
@@ -47,12 +48,12 @@ void setup()
    
    Serial.println("Done!");
    
-   setTime(setTimeTemp); // set time to EEPROM */
+   setTime(setTimeTemp); // set time to EEPROM 
 
   Serial.println("The current time is:");
   //digitalClockDisplay();
   
-  setupTheCurrentTimeThroughSerial();
+  //setupTheCurrentTimeThroughSerial();
 
 
   //Set Pinmodes:
@@ -77,13 +78,13 @@ void loop() {
     //Automated Rickrolling madness!
     rickRollCrashAndBurn(); //should this continue for a few minutes? Probably! ;) 
  
-  //setTimeTemp = now(); //get the current time in seconds.
-/*
+  setTimeTemp = now(); //get the current time in seconds.
+
   int16_t offset; //this is where in eeprom we should start saving/reading.
   offset = 0x00;
   eeprom_write_block((const void*)&setTimeTemp, (void*)offset, 4);
 
-*/
+
   delay(1000); // wait 30 seconds between everything. This might use up too much battery. Maybe just a big 'ol delay? Or amybe just a full on sleep
 
 }
@@ -190,23 +191,24 @@ void setupTheCurrentTimeThroughSerial() {
 
   setTimeTemp = now(); //get the current time in seconds.
 
-//  //Save it in EEPROM
-//  int16_t offset; //this is where in eeprom we should start saving/reading.
-//  offset = 0x00;
-//  eeprom_write_block((const void*)&setTimeTemp, (void*)offset, 4);
+  //Save it in EEPROM
+  int16_t offset; //this is where in eeprom we should start saving/reading.
+  offset = 0x00;
+  eeprom_write_block((const void*)&setTimeTemp, (void*)offset, 4);
 
   clearTime(); //Get ready for the next command!
   Serial.println("Set the target time!(same format)");
 
   getSerialTimeData(); //Get input for trigger time.
+  setTimeTemp = now(); //get the current time in seconds.
 
   setTime(time[0], time[1], 0, time[3], time[2], time[4]); // set time to Serialtime. 
 
   triggerTimeSecs = now(); //get the trigger time
 
-//  //Save into EEPROM
-//  offset = 0x04;
-//  eeprom_write_block((const void*)&triggerTimeSecs, (void*)offset, 4);
+  //Save into EEPROM
+  offset = 0x04;
+  eeprom_write_block((const void*)&triggerTimeSecs, (void*)offset, 4);
 
   Serial.println("April Fools device now has the target time:");
   Serial.println(now());
