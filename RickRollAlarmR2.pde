@@ -8,18 +8,21 @@
 #include <Time.h>
 #include <TimeAlarms.h>
 #include <avr/eeprom.h>
+#include <string.h>
 
-
-String password, passwordTry;
 
 int time[5]; //TIme buffer, stores time except for seconds  
 int triggerTime[5]; //TIme buffer, stores time except for seconds
+
+char password[] = "hahaha";
+
+int sizePassword = sizeof(password) / sizeof(password[0]);
 
 time_t triggerTimeSecs = 0; //Trigger Time in seconds. 
 time_t setTimeTemp; //Current time to set 
 
 boolean isTimeSet = false;
-boolean debugMode = true;
+boolean debugMode = false;
 boolean alarmInProgress = false;
 
 unsigned long delayMillis = 0;
@@ -37,22 +40,25 @@ void setup()
   Serial.begin(9600);    
 
   Serial.println("Read current time from EEPROM....");
-  
+
   //Read previously saved time from EEPROM
-   int16_t offset; //this is where in eeprom we should start saving/reading.
-   offset = 0x00;
-   eeprom_read_block((void*)&setTimeTemp, (const void*)offset, 4); //read it from eeprom
-   
-   offset = 0x04;
-   eeprom_read_block((void*)&triggerTimeSecs, (const void*)offset, 4); //read it from eeprom
-   
-   Serial.println("Done!");
-   
-   setTime(setTimeTemp); // set time to EEPROM 
+  int16_t offset; //this is where in eeprom we should start saving/reading.
+  offset = 0x00;
+  eeprom_read_block((void*)&setTimeTemp, (const void*)offset, 4); //read it from eeprom
+
+  offset = 0x04;
+  eeprom_read_block((void*)&triggerTimeSecs, (const void*)offset, 4); //read it from eeprom
+
+  Serial.println("Done!");
+
+  setTime(setTimeTemp); // set time to EEPROM 
 
   Serial.println("The current time is:");
-  //digitalClockDisplay();
-  
+  digitalClockDisplay(now());
+
+  Serial.println("The set time is:");
+  digitalClockDisplay(triggerTimeSecs);
+
   //setupTheCurrentTimeThroughSerial();
 
 
@@ -60,24 +66,28 @@ void setup()
   pinMode(CHIPCORDER_PIN, OUTPUT);
   digitalWrite(CHIPCORDER_PIN, LOW);
 
-  
- Serial.println("Device on standby, pending setup. Password please?");
+
+  Serial.println("Airquality datalogger online. Enter a password please for sysadmin options.");
 }
 
 
 void loop() {  
 
   //check if there is anything coming in the serial port (like a password!)
- 
+  if (Serial.available() > 2) {
+    if (debugMode) Serial.println("checking again!");
+    getPassword();
+  }
+
 
   if (debugMode) { //if we are in the debugging mode
-    digitalClockDisplay();  //display the time once every few seconds.
+    digitalClockDisplay(now());  //display the time once every few seconds.
   }
 
   //Check for trigger conditions.
-    //Automated Rickrolling madness!
-    rickRollCrashAndBurn(); //should this continue for a few minutes? Probably! ;) 
- 
+  //Automated Rickrolling madness!
+  rickRollCrashAndBurn(); //should this continue for a few minutes? Probably! ;) 
+
   setTimeTemp = now(); //get the current time in seconds.
 
   int16_t offset; //this is where in eeprom we should start saving/reading.
@@ -85,22 +95,22 @@ void loop() {
   eeprom_write_block((const void*)&setTimeTemp, (void*)offset, 4);
 
 
-  delay(1000); // wait 30 seconds between everything. This might use up too much battery. Maybe just a big 'ol delay? Or amybe just a full on sleep
+  delay(3000); // wait 30 seconds between everything. This might use up too much battery. Maybe just a big 'ol delay? Or amybe just a full on sleep
 
 }
 
 
 
-void digitalClockDisplay()
+void digitalClockDisplay(time_t displayTime)
 {
   // digital clock display of the time
   //(Hour:Minute:Seconds:Month(int):Date:Year:)"
-  Serial.print(hour());
-  printDigits(minute());
-  printDigits(second());
-  printDigits(month());
-  printDigits(day());
-  printDigits(year());
+  Serial.print(hour(displayTime));
+  printDigits(minute(displayTime));
+  printDigits(second(displayTime));
+  printDigits(month(displayTime));
+  printDigits(day(displayTime));
+  printDigits(year(displayTime));
   Serial.println(); 
 }
 
@@ -123,51 +133,46 @@ boolean triggerTimeReached() {
   else return false;
 }
 
-boolean getPassword() {
+void getPassword() {
   //checks the serial input to see if its the password. If not, then break out and do not allow any changes.
   char tempChar;
   int index = 0;
-  char buffer[40];
+  char buffer[10];
 
   delay(100); //delay to allow the serial data to filter in.
+ /* for (int i = 0; i < 4; i++) {
+    buffer[i] = '\0'; 
+  }*/
 
-  while (Serial.available()) { //get the serial data.
+  while (Serial.available() > 0) { //get the serial data.
     buffer[index] = Serial.read();
     index++; 
   } 
-
-  passwordTry = buffer[0]; //clear the password try
-  for (int i = 1; i <index; i++) { //turn it into a string
-    passwordTry += buffer[i];
-  }
-  for (int i = 0; i < 40; i++) {
-       buffer[i] = '\0'; 
-      }
-  if (password == passwordTry) { //is it the password?
-    return true; 
+  if (strncmp(buffer, password, sizePassword-1) == 0) { //is it the password?
+    setupTheCurrentTimeThroughSerial();
   } 
   else {
-    return false; 
+    
   }
 
 }
 
 void rickRollCrashAndBurn() {
-  Serial.println("Checking.");
+  if (debugMode) Serial.println("Checking.");
   if (now() > triggerTimeSecs && now() < triggerTimeSecs + (RICKROLL_MINUTES*60)) {
-    Serial.println("Time is right.");
-  //RickRoll!
-  //wait the 30secs minutes between rickrolls
-  if (millis() > delayMillis + (RICKROLL_REPEAT_DELAY*1000)) {
-    Serial.println("Detonate!");
-    //reset the millis timer
-    delayMillis = millis();
+     if (debugMode) Serial.println("Time is right.");
+    //RickRoll!
+    //wait the 30secs minutes between rickrolls
+    if (millis() > delayMillis + (RICKROLL_REPEAT_DELAY*1000)) {
+      Serial.println("Detonate!");
+      //reset the millis timer
+      delayMillis = millis();
 
-    //pulse the output pin.
-    digitalWrite(CHIPCORDER_PIN, HIGH);
-    delay(1000);
-    digitalWrite(CHIPCORDER_PIN, LOW);
-  }
+      //pulse the output pin.
+      digitalWrite(CHIPCORDER_PIN, HIGH);
+      delay(1000);
+      digitalWrite(CHIPCORDER_PIN, LOW);
+    }
   }
 }
 
@@ -250,8 +255,8 @@ void getSerialTimeData() { //Gets a serial time from serial. used for settings o
         timeIndex++;
         //clear the buffer
         for (int i = 0; i < 40; i++) {
-       buffer[i] = '\0'; 
-      }
+          buffer[i] = '\0'; 
+        }
         index = 0;
       }
     }
@@ -261,8 +266,8 @@ void getSerialTimeData() { //Gets a serial time from serial. used for settings o
     timeIndex++;
     //clear the buffer
     for (int i = 0; i < 40; i++) {
-       buffer[i] = '\0'; 
-      }
+      buffer[i] = '\0'; 
+    }
     index = 0;
 
     //check that we indeed did get 5 colins
@@ -270,7 +275,7 @@ void getSerialTimeData() { //Gets a serial time from serial. used for settings o
       isTimeSet = true; //breakout of loop
       timeIndex = 0;
       for (int i = 0; i < 40; i++) {
-       buffer[i] = '\0'; 
+        buffer[i] = '\0'; 
       }
       index = 0;
       Serial.println("Time recieved and set!");
@@ -281,7 +286,7 @@ void getSerialTimeData() { //Gets a serial time from serial. used for settings o
       clearTime();
       timeIndex = 0;
       for (int i = 0; i < 40; i++) {
-       buffer[i] = '\0'; 
+        buffer[i] = '\0'; 
       }
       index = 0;
       Serial.println("Sorry, couldn't parse that input. Are you sure that you typed it correctly and included 5 colins? (You do not need a colin at the end of the command)");
@@ -289,10 +294,3 @@ void getSerialTimeData() { //Gets a serial time from serial. used for settings o
 
   }
 }
-
-
-
-
-
-
-
