@@ -1,8 +1,9 @@
 /*
- * TimeAlarmExample.pde
- *
+ Sketch made by XtremD. Finished on April 1st, 2011.
+ 
  This program asks for the time and day via serial and then updates the serial with the current date and time (for debuging purposes)
- Then at a preset time it pulses a pin that is connected to a chipcorder and it rickrolls! Happy Rickrolling!
+ At a preset time it pulses a pin that is connected to a chipcorder and it rickrolls! Happy Rickrolling!
+ Released under the Creative Commons Attribution-ShareAlike 3.0 
  */
 
 #include <Time.h>
@@ -27,7 +28,7 @@ boolean alarmInProgress = false;
 
 unsigned long delayMillis = 0;
 
-#define RICKROLL_MINUTES      10 //Number of minutes to rickroll for.
+#define RICKROLL_MINUTES      60 //Number of minutes to rickroll for.
 #define RICKROLL_REPEAT_DELAY 24  //Seconds to wait before Rickrolling again.
 #define CHIPCORDER_PIN        2 //The pin that the chipcorder is connected to.
 
@@ -95,7 +96,7 @@ void loop() {
   eeprom_write_block((const void*)&setTimeTemp, (void*)offset, 4);
 
 
-  delay(3000); // wait 30 seconds between everything. This might use up too much battery. Maybe just a big 'ol delay? Or amybe just a full on sleep
+  delay(20000); // wait 20 seconds between everything. This might use up too much battery. Maybe just a big 'ol delay? Or amybe just a full on sleep
 
 }
 
@@ -140,9 +141,9 @@ void getPassword() {
   char buffer[10];
 
   delay(100); //delay to allow the serial data to filter in.
- /* for (int i = 0; i < 4; i++) {
-    buffer[i] = '\0'; 
-  }*/
+  /* for (int i = 0; i < 4; i++) {
+   buffer[i] = '\0'; 
+   }*/
 
   while (Serial.available() > 0) { //get the serial data.
     buffer[index] = Serial.read();
@@ -152,27 +153,24 @@ void getPassword() {
     setupTheCurrentTimeThroughSerial();
   } 
   else {
-    
+
   }
 
 }
 
 void rickRollCrashAndBurn() {
   if (debugMode) Serial.println("Checking.");
-  if (now() > triggerTimeSecs && now() < triggerTimeSecs + (RICKROLL_MINUTES*60)) {
-     if (debugMode) Serial.println("Time is right.");
+  while (now() > triggerTimeSecs && now() < triggerTimeSecs + (RICKROLL_MINUTES*60)) {
+    if (debugMode) Serial.println("Time is right.");
     //RickRoll!
-    //wait the 30secs minutes between rickrolls
-    if (millis() > delayMillis + (RICKROLL_REPEAT_DELAY*1000)) {
-      Serial.println("Detonate!");
-      //reset the millis timer
-      delayMillis = millis();
+    Serial.println("RickRolling!");
 
-      //pulse the output pin.
-      digitalWrite(CHIPCORDER_PIN, HIGH);
-      delay(1000);
-      digitalWrite(CHIPCORDER_PIN, LOW);
-    }
+    //pulse the output pin.
+    digitalWrite(CHIPCORDER_PIN, HIGH);
+    delay(1000);
+    digitalWrite(CHIPCORDER_PIN, LOW);
+    delay(RICKROLL_REPEAT_DELAY); //delay 30 seconds.
+
   }
 }
 
@@ -294,3 +292,4 @@ void getSerialTimeData() { //Gets a serial time from serial. used for settings o
 
   }
 }
+
